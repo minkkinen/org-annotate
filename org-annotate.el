@@ -116,6 +116,11 @@ only supports comment."
 (defun org-annotate-export-latex-footnote (path desc)
   (format "%s\\footnote{%s}" (or desc "") path))
 
+(defun org-annotate-export-latex-hl (path desc)
+  (if (not (equal path ""))
+      (format "\\hl{%s}\\todo{%s}" (or desc "") path)
+    (format "\\hl{%s}" desc)))
+
 (defun org-annotate-export-odt-comment (path desc)
   ;;; This doesn't currently work.
   (format "%s<office:annotation><dc:creator>%s</dc:creator><dc:date>%s</dc:date><text:p>%s</text:p></office:annotation>"
@@ -361,7 +366,7 @@ or subtree."
   "Background color for notes.")
 
 (defvar org-annotate-re
-  "\\(\\[\\[\\)?note:\\([^]]\\)+\\]?\\[?\\([^]]\\)*\\(\\]\\]\\)"
+  "\\(\\[\\[\\)?note:\\([^]]\\)*\\]?\\[?\\([^]]\\)*\\(\\]\\]\\)"
   "Regex for note links. I am not sure how robust this is. It works so far.")
 
 (defface org-annotate-face
