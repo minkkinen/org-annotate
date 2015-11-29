@@ -205,6 +205,29 @@ arg, in the current subtree) in a tabulated list form."
       (setq org-annotate-notes-source (cons source-buf marker)))
     (org-annotate-refresh-list)))
 
+;;;###autoload
+(defun org-annotate-display-notes-for-hashtag ()
+  "Display all notes for a given hashtag in the current buffer in
+a tabulated list form. At the moment it only finds the first
+hashtag in each note."
+  (interactive)
+  (let* ((hashtag (completing-read "Hashtag: " (org-annotate-collect-hashtags)))
+	 (source-buf (current-buffer))
+	 (marker)
+	 (list-buf (get-buffer-create
+		    (concat org-annotate-list-buffer-prefix
+			    (buffer-name source-buf)
+			    (if marker
+				(concat "-"
+					(number-to-string
+					 (marker-position marker)))
+			      "") "*"))))
+    (switch-to-buffer-other-window list-buf)
+    (unless (eq major-mode 'org-annotate-list-mode)
+      (org-annotate-list-mode)
+      (setq org-annotate-notes-source (cons source-buf marker)))
+    (org-annotate-refresh-links-for-hashtag hashtag)))
+
 (defun org-annotate-collect-links ()
   "Do the work of finding all the notes in the current buffer
 or subtree."
@@ -249,6 +272,60 @@ or subtree."
 	  (when links
 	    (reverse links)))))))
 
+(defun org-annotate-collect-hashtags ()
+  "Find all hashtags present in the current buffer."
+  (let ((hashtag-list))
+    (goto-char (point-min))
+    (while (re-search-forward org-bracket-link-regexp (point-max) t) ; go through all links
+      (let ((path (match-string-no-properties 1))
+	    (text (match-string-no-properties 3)))
+	(when (string-match-p "\\`note:" path) ; we have a note link
+	  ;; collect all hashtags from path
+	  (when (string-match "#\\([^ ]+\\)" path)
+	    (push (match-string-no-properties 1 path) hashtag-list)))))
+    (delete-dups hashtag-list)))
+	  
+      
+
+(defun org-annotate-collect-links-for-hashtag (hashtag)
+  "Find all notes in the current buffer for the given hashtag.
+Subtree searching not implemented yet."
+  (when org-annotate-notes-source
+    (with-current-buffer (car org-annotate-notes-source)
+      (save-restriction
+	(widen)
+	(let* ((marker (cdr org-annotate-notes-source))
+	       (beg (or marker (point-min)))
+	       (end (if marker
+			(save-excursion
+			  (goto-char marker)
+			  (outline-next-heading)
+			  (point))
+		      (point-max)))
+	       links)
+	  (goto-char beg)
+	  (while (re-search-forward org-bracket-link-regexp end t)
+	    (let ((path (match-string-no-properties 1))
+		  (text (match-string-no-properties 3))
+		  start)
+	      (when (and (string-match-p "\\`note:" path)
+			 (string-match-p (concat "#" hashtag) path))
+		(setq path
+		      (org-link-unescape
+		       (replace-regexp-in-string "\\`note:" "" path)))
+		(setq text (if text
+			       (org-link-unescape
+				(replace-regexp-in-string "\n+" " " text))
+			     "[no text]"))
+		(setq start
+		      (save-excursion
+			(goto-char
+			 (org-element-property :begin (org-element-context)))
+			(point-marker)))
+		(push (list start (vector text path)) links))))
+	  (when links
+	    (reverse links)))))))
+
 (defun org-annotate-refresh-list ()
   (let ((links (org-annotate-collect-links))
 	(max-width 0))
@@ -264,6 +341,23 @@ or subtree."
 	  (tabulated-list-init-header)
 	  (tabulated-list-print))
       (message "No notes found")
+      nil)))
+
+(defun org-annotate-refresh-links-for-hashtag (hashtag)
+  (let ((links (org-annotate-collect-links-for-hashtag hashtag))
+	(max-width 0))
+    (if links
+	(progn
+	  (dolist (h links)
+	    (setq max-width
+		  (max max-width
+		       (string-width (aref (cadr h) 0)))))
+	  (setq tabulated-list-entries links
+		tabulated-list-format
+		(vector `("Text" ,(min max-width 40) t) '("Note" 40 t)))
+	  (tabulated-list-init-header)
+	  (tabulated-list-print))
+      (message "No notes found for hashtag")
       nil)))
 
 (defvar org-annotate-list-mode-map
