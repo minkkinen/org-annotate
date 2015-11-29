@@ -208,8 +208,8 @@ arg, in the current subtree) in a tabulated list form."
 ;;;###autoload
 (defun org-annotate-display-notes-for-hashtag ()
   "Display all notes for a given hashtag in the current buffer in
-a tabulated list form. At the moment it only finds the first
-hashtag in each note."
+a tabulated list form."
+  ;;; TODO implement searches for multiple hashtags
   (interactive)
   (let* ((hashtag (completing-read "Hashtag: " (org-annotate-collect-hashtags)))
 	 (source-buf (current-buffer))
@@ -281,8 +281,10 @@ or subtree."
 	    (text (match-string-no-properties 3)))
 	(when (string-match-p "\\`note:" path) ; we have a note link
 	  ;; collect all hashtags from path
-	  (when (string-match "#\\([^ ]+\\)" path)
-	    (push (match-string-no-properties 1 path) hashtag-list)))))
+	  (while (string-match "#\\([^ ]+\\)" path)
+	    (push (match-string-no-properties 1 path) hashtag-list)
+	    (setq path
+		  (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
     (delete-dups hashtag-list)))
 	  
       
