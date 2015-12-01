@@ -54,6 +54,7 @@
 
 (require 'org)
 (require 'cl-lib)
+(require 'dash)
 (require 'tabulated-list)
 
 (org-add-link-type
@@ -207,11 +208,11 @@ arg, in the current subtree) in a tabulated list form."
 
 ;;;###autoload
 (defun org-annotate-display-notes-for-hashtag ()
-  "Display all notes for a given hashtag in the current buffer in
-a tabulated list form."
-  ;;; TODO implement searches for multiple hashtags
+  "Display all notes for given hashtags in the current buffer in
+a tabulated list form. Multiple comma-separated hashtags may be
+given."
   (interactive)
-  (let* ((hashtag (completing-read "Hashtag: " (org-annotate-collect-hashtags)))
+  (let* ((hashtag (completing-read-multiple "Hashtag: " (org-annotate-collect-hashtags)))
 	 (source-buf (current-buffer))
 	 (marker)
 	 (list-buf (get-buffer-create
@@ -226,7 +227,7 @@ a tabulated list form."
     (unless (eq major-mode 'org-annotate-list-mode)
       (org-annotate-list-mode)
       (setq org-annotate-notes-source (cons source-buf marker)))
-    (org-annotate-refresh-links-for-hashtag hashtag)))
+    (org-annotate-refresh-list-for-hashtag hashtag)))
 
 (defun org-annotate-collect-links ()
   "Do the work of finding all the notes in the current buffer
@@ -286,8 +287,6 @@ or subtree."
 	    (setq path
 		  (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
     (delete-dups hashtag-list)))
-	  
-      
 
 (defun org-annotate-collect-links-for-hashtag (hashtag)
   "Find all notes in the current buffer for the given hashtag.
@@ -311,7 +310,9 @@ Subtree searching not implemented yet."
 		  (text (match-string-no-properties 3))
 		  start)
 	      (when (and (string-match-p "\\`note:" path)
-			 (string-match-p (concat "#" hashtag) path))
+			 ;; all hashtags given in search must be in
+			 ;; the path string
+			 (-all? (lambda (x) (string-match-p (concat "#" x) path)) hashtag))
 		(setq path
 		      (org-link-unescape
 		       (replace-regexp-in-string "\\`note:" "" path)))
@@ -345,7 +346,7 @@ Subtree searching not implemented yet."
       (message "No notes found")
       nil)))
 
-(defun org-annotate-refresh-links-for-hashtag (hashtag)
+(defun org-annotate-refresh-list-for-hashtag (hashtag)
   (let ((links (org-annotate-collect-links-for-hashtag hashtag))
 	(max-width 0))
     (if links
@@ -356,7 +357,7 @@ Subtree searching not implemented yet."
 		       (string-width (aref (cadr h) 0)))))
 	  (setq tabulated-list-entries links
 		tabulated-list-format
-		(vector `("Text" ,(min max-width 40) t) '("Note" 40 t)))
+		(vector `("Text" ,(min max-width 60) t) '("Note" 20 t)))
 	  (tabulated-list-init-header)
 	  (tabulated-list-print))
       (message "No notes found for hashtag")
