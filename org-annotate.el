@@ -478,6 +478,8 @@ Subtree searching not implemented yet."
   (hi-lock-mode 1)
   (highlight-regexp org-annotate-re 'org-annotate-face))
 
+(add-hook 'org-mode-hook 'org-annotate-colorize-links)
+
 ;; * Org-mode menu
 (defun org-annotate-org-menu ()
   "Add org-annotate menu to the Org menu."
