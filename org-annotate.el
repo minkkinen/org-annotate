@@ -1,8 +1,8 @@
 ;;; org-annotate.el --- Inline-note link syntax for Org  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015  Eric Abrahamsen
+;; Copyright (C) 2015  Eric Abrahamsen, Matti Minkkinen
 
-;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
+;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>, Matti Minkkinen <matti.minkkinen@iki.fi>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -174,7 +174,21 @@ kill ring.  Bound to \"w\" in those buffers."
         (setf (buffer-substring (region-beginning) (region-end))
               (format "[[note:%s][%s]]"
                       (read-string "Note: ") selected-text)))
-  (insert (format "[[note:%s]]" (read-string "Note: ")))))
+    (insert (format "[[note:%s]]" (read-string "Note: ")))))
+
+;;;###autoload
+(defun org-annotate-add-hashtag ()
+  (interactive)
+  (let ((hashtags
+	 (mapconcat (lambda (x) (concat "#" x))
+		    (completing-read-multiple "Hashtag: " (org-annotate-collect-hashtags)) " ")))
+    (if (use-region-p)
+	(let ((selected-text
+	       (buffer-substring (region-beginning) (region-end))))
+	  (setf (buffer-substring (region-beginning) (region-end))
+		(format "[[note:%s][%s]]"
+			hashtags selected-text)))
+      (insert (format "[[note:%s]]" hashtags)))))
 
 ;; The purpose of making this buffer-local is defeated by the fact
 ;; that we only have one *Org Annotations List* buffer!
@@ -275,18 +289,19 @@ or subtree."
 
 (defun org-annotate-collect-hashtags ()
   "Find all hashtags present in the current buffer."
-  (let ((hashtag-list))
-    (goto-char (point-min))
-    (while (re-search-forward org-bracket-link-regexp (point-max) t) ; go through all links
-      (let ((path (match-string-no-properties 1))
-	    (text (match-string-no-properties 3)))
-	(when (string-match-p "\\`note:" path) ; we have a note link
-	  ;; collect all hashtags from path
-	  (while (string-match "#\\([^ ]+\\)" path)
-	    (push (match-string-no-properties 1 path) hashtag-list)
-	    (setq path
-		  (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
-    (delete-dups hashtag-list)))
+  (save-excursion
+    (let ((hashtag-list))
+      (goto-char (point-min))
+      (while (re-search-forward org-bracket-link-regexp (point-max) t) ; go through all links
+	(let ((path (match-string-no-properties 1))
+	      (text (match-string-no-properties 3)))
+	  (when (string-match-p "\\`note:" path) ; we have a note link
+	    ;; collect all hashtags from path
+	    (while (string-match "#\\([^ ]+\\)" path)
+	      (push (match-string-no-properties 1 path) hashtag-list)
+	      (setq path
+		    (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
+      (delete-dups hashtag-list))))
 
 (defun org-annotate-collect-links-for-hashtag (hashtag)
   "Find all notes in the current buffer for the given hashtag.
