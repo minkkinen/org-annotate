@@ -299,7 +299,7 @@ or subtree."
 		(text (match-string-no-properties 3)))
 	    (when (string-match-p "\\`note:" path) ; we have a note link
 	      ;; collect all hashtags from path
-	      (while (string-match "#\\([^ ]+\\)" path)
+	      (while (string-match "#\\([^ ,]+\\)" path)
 		(push (match-string-no-properties 1 path) hashtag-list)
 		(setq path
 		      (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
