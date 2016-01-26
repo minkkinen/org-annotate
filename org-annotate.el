@@ -181,7 +181,7 @@ kill ring.  Bound to \"w\" in those buffers."
   (interactive)
   (let ((hashtags
 	 (mapconcat (lambda (x) (concat "#" x))
-		    (completing-read-multiple "Hashtag: " (org-annotate-collect-hashtags)) " ")))
+		    (completing-read-multiple "Hashtag: " (org-annotate-collect-hashtags)) ",")))
     (if (use-region-p)
 	(let ((selected-text
 	       (buffer-substring (region-beginning) (region-end))))
