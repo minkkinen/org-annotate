@@ -299,7 +299,7 @@ or subtree."
 		(text (match-string-no-properties 3)))
 	    (when (string-match-p "\\`note:" path) ; we have a note link
 	      ;; collect all hashtags from path
-	      (while (string-match "#\\([^ ,]+\\)" path)
+	      (while (string-match "#\\([^ ,%]+\\)" path)
 		(push (match-string-no-properties 1 path) hashtag-list)
 		(setq path
 		      (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
@@ -490,12 +490,33 @@ Subtree searching not implemented yet."
 		 :foreground ,org-annotate-foreground)))
   "Face for note links in org-mode.")
 
+(defface org-annotate-overlay-face
+  '((t (:foreground "MediumSeaGreen")))
+  "Face for annotation overlays.")
+
 (defun org-annotate-colorize-links ()
   "Colorize org-ref links."
   (hi-lock-mode 1)
   (highlight-regexp org-annotate-re 'org-annotate-face))
 
 (add-hook 'org-mode-hook 'org-annotate-colorize-links)
+
+(defun org-annotate-make-overlays ()
+  (interactive)
+  "Make overlays to display annotations."
+  (save-excursion
+    (remove-overlays)
+    (goto-char (point-min))
+    (while (re-search-forward org-bracket-link-regexp (point-max) t)
+      (let ((path (match-string-no-properties 1))
+	    (text (match-string-no-properties 3))
+	    (overlay (make-overlay (match-beginning 0) (match-end 0))))
+	(when (and (string-match-p "\\`note:" path)
+		   (not (equal () text)))
+	  (overlay-put overlay 'before-string
+		       (propertize
+			(concat " " (replace-regexp-in-string "\\`note:" "" path) " ")
+			'face 'org-annotate-overlay-face)))))))
 
 ;; * Org-mode menu
 (defun org-annotate-org-menu ()
