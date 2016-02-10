@@ -221,11 +221,11 @@ arg, in the current subtree) in a tabulated list form."
     (org-annotate-refresh-list)))
 
 ;;;###autoload
-(defun org-annotate-display-notes-for-hashtag ()
+(defun org-annotate-display-notes-for-hashtag (&optional arg)
   "Display all notes for given hashtags in the current buffer in
 a tabulated list form. Multiple comma-separated hashtags may be
 given."
-  (interactive)
+  (interactive "P")
   (let* ((hashtag (completing-read-multiple "Hashtag: " (org-annotate-collect-hashtags)))
 	 (source-buf (current-buffer))
 	 (marker)
@@ -241,7 +241,9 @@ given."
     (unless (eq major-mode 'org-annotate-list-mode)
       (org-annotate-list-mode)
       (setq org-annotate-notes-source (cons source-buf marker)))
-    (org-annotate-refresh-list-for-hashtag hashtag)))
+    (if arg
+	(org-annotate-refresh-list-for-hashtag hashtag t)
+      (org-annotate-refresh-list-for-hashtag hashtag))))
 
 (defun org-annotate-collect-links ()
   "Do the work of finding all the notes in the current buffer
@@ -305,9 +307,10 @@ or subtree."
 		      (replace-regexp-in-string (match-string-no-properties 1 path) "" path))))))
 	(delete-dups hashtag-list)))))
 
-(defun org-annotate-collect-links-for-hashtag (hashtag)
+(defun org-annotate-collect-links-for-hashtag (hashtag &optional arg)
   "Find all notes in the current buffer for the given hashtag.
-Subtree searching not implemented yet."
+Subtree searching not implemented yet. With prefix argument, also
+include the org mode tags in the search."
   (when org-annotate-notes-source
     (with-current-buffer (car org-annotate-notes-source)
       (save-restriction
@@ -326,6 +329,13 @@ Subtree searching not implemented yet."
 	    (let ((path (match-string-no-properties 1))
 		  (text (match-string-no-properties 3))
 		  start)
+	      (when arg
+		(let* ((alltags (org-no-properties (org-entry-get (point) "ALLTAGS")))
+		       (tags (if alltags (split-string alltags ":" t)
+			       'nil))
+		       (tagstring (concat " #" (mapconcat 'identity tags ",#") " ")))
+		  (setq path
+			(concat path tagstring))))
 	      (when (and (string-match-p "\\`note:" path)
 			 ;; all hashtags given in search must be in
 			 ;; the path string
@@ -363,8 +373,10 @@ Subtree searching not implemented yet."
       (message "No notes found")
       nil)))
 
-(defun org-annotate-refresh-list-for-hashtag (hashtag)
-  (let ((links (org-annotate-collect-links-for-hashtag hashtag))
+(defun org-annotate-refresh-list-for-hashtag (hashtag &optional arg)
+  (let ((links (if arg
+		   (org-annotate-collect-links-for-hashtag hashtag t)
+		 (org-annotate-collect-links-for-hashtag hashtag)))
 	(max-width 0))
     (if links
 	(progn
