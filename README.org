@@ -1,0 +1,42 @@
+#+TITLE: Org-annotate
+
+Org-annotate provides a new link type for Org that allows you to
+create annotations on arbitrary chunks of text such as research notes
+or a draft manuscript. The link prefix is "note:".
+
+Add notes with `org-annotate-add-note'.  Following the link will
+display the text of the note in a pop-up buffer.  The buffer is in
+special-mode, hit "q" to dismiss it.
+
+Call `org-annotate-display-notes' to see all notes in a buffer.
+Press "?" in this buffer to see more options.
+
+* Hashtags and annotation overlays
+
+Org-annotate also includes support for attaching hashtags to passages
+of text. You can add hashtags simply as parts of any note, e.g. "This
+is an interesting passage on a #topic". There is also the function
+`org-annotate-add-hashtag' which allows you to add comma-separated
+hashtags to a passage with tab completion.
+
+You can search for comma-separated hashtags with tab completion by
+using the function `org-annotate-display-notes-for-hashtag'. If you
+call this function with a prefix argument, it also considers org mode
+tags of parent headings as hashtags and includes them in the search.
+
+To see overlays of your text annotations in the buffer, call
+`org-annotate-make-overlays'. To refresh overlays, call this function
+again. You can also add it to a hook to automate refreshing annotation
+overlays.
+
+* Exporting annotations
+
+Customize how notes are exported in different backends by setting the
+`org-annotate-[backend]-export-function' options, where "backend" is a
+valid backend identifier. Each option should point to a function that
+accepts two arguments, the path and description strings of the link,
+and returns a single formatted string for insertion in the exported
+text. Some default functions are provided for HTML, LaTeX and ODT, see
+the `org-annotate-export-*' functions. Note that setting
+`org-annotate-latex-export-function' to `org-annotate-export-latex-hl'
+requires the LaTeX packages `soul' and `todonotes' to work.
