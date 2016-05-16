@@ -57,10 +57,12 @@
 (require 'dash)
 (require 'tabulated-list)
 
-(org-add-link-type
- "note"
- #'org-annotate-display-note
- #'org-annotate-export-note)
+;;;###autoload
+(with-eval-after-load 'org
+  (org-add-link-type
+   "note"
+   #'org-annotate-display-note
+   #'org-annotate-export-note))
 
 (defgroup org-annotate nil
   "Annotation link type for Org."
@@ -129,6 +131,7 @@ only supports comment."
 	  (format-time-string "%FT%T%z" (current-time))
 	  path))
 
+;;;###autoload
 (defun org-annotate-export-note (path desc format)
   (let ((export-func
 	 (symbol-value
@@ -139,6 +142,7 @@ only supports comment."
       ;; If there's no function to handle the note, just delete it.
       desc)))
 
+;;;###autoload
 (defun org-annotate-display-note (linkstring)
   (when linkstring
     (with-current-buffer
@@ -483,8 +487,7 @@ include the org mode tags in the search."
      (point) "\t")
     (org-reveal)))
 
-;; * John Kitchin additions
-;; ** Colorizing note links
+;; * Colorizing note links
 (defvar org-annotate-foreground "red"
   "Font color for notes.")
 
@@ -497,21 +500,52 @@ include the org mode tags in the search."
 
 (defface org-annotate-face
   `((t (:inherit org-link
-		 :weight bold
-		 :background ,org-annotate-background
-		 :foreground ,org-annotate-foreground)))
+        :weight bold
+        :background ,org-annotate-background
+        :foreground ,org-annotate-foreground)))
   "Face for note links in org-mode.")
 
 (defface org-annotate-overlay-face
   '((t (:foreground "MediumSeaGreen")))
   "Face for annotation overlays.")
 
-(defun org-annotate-colorize-links ()
-  "Colorize org-ref links."
-  (hi-lock-mode 1)
-  (highlight-regexp org-annotate-re 'org-annotate-face))
+(defface org-annotate-text-face
+  '((t (:inherit default
+        :underline t)))
+  "Face for inline text of note links in org-mode.")
 
-(add-hook 'org-mode-hook 'org-annotate-colorize-links)
+(defface org-annotate-bracket-face
+  '((t (:inherit font-lock-comment-face)))
+  "Face for visible brackets of note links in org mode")
+
+(defvar org-annotate-font-lock-keywords
+  '(("\\[\\(\\[\\)\\(note:\\)\\([^]]+\\)\\(\\]\\)\\]"
+     (1 '(face org-annotate-bracket-face invisible nil) prepend)
+     (2 '(face bold invisible nil) prepend)
+     (3 '(face org-annotate-face invisible nil) prepend)
+     (4 '(face org-annotate-bracket-face invisible nil) prepend))
+    ("\\[\\(\\[\\)\\(note:\\)\\([^]]+\\)\\(\\]\\)\\[\\([^]]+\\)\\]\\]"
+     (1 '(face org-annotate-bracket-face invisible nil) prepend)
+     (2 '(face default invisible t) prepend)
+     (3 '(face org-annotate-face invisible nil) prepend)
+     (4 '(face org-annotate-bracket-face invisible nil) prepend)
+     (5 'org-annotate-text-face prepend)))
+  "Keywords for fontifying org-annotate notes")
+
+(defun org-annotate-activate-colored-links ()
+  (add-hook 'org-font-lock-set-keywords-hook #'org-annotate-colorize-links))
+
+(defun org-annotate-deactivate-colored-links ()
+  (remove-hook 'org-font-lock-set-keywords-hook #'org-annotate-colorize-links)
+  (when (derived-mode-p 'org-mode)
+    (org-mode)))
+
+;;activate by default
+(org-annotate-activate-colored-links)
+
+(defun org-annotate-colorize-links ()
+  (dolist (el org-annotate-font-lock-keywords)
+    (add-to-list 'org-font-lock-extra-keywords el t)))
 
 (defun org-annotate-make-overlays ()
   (interactive)
