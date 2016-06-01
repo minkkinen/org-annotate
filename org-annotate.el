@@ -524,7 +524,7 @@ include the org mode tags in the search."
      (2 '(face bold invisible nil) prepend)
      (3 '(face org-annotate-face invisible nil) prepend)
      (4 '(face org-annotate-bracket-face invisible nil) prepend))
-    ("\\[\\(\\[\\)\\(note:\\)\\([^]]+\\)\\(\\]\\)\\[\\([^]]+\\)\\]\\]"
+    ("\\[\\(\\[\\)\\(note:\\)\\([^]]*\\)\\(\\]\\)\\[\\([^]]+\\)\\]\\]"
      (1 '(face org-annotate-bracket-face invisible nil) prepend)
      (2 '(face default invisible t) prepend)
      (3 '(face org-annotate-face invisible nil) prepend)
